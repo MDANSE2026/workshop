@@ -37,5 +37,11 @@ many of them as answers.
 
 ## Trajectory stability exercise
 
-Once 
+Once the previous part has been completed, you can move on to working
+on the trajectory called `tutorial1_trajectory.h5`.
+It is a trajectory in H5MD format, and your task is to find out what
+this file contains and what it can be used for, or not.
 
+You are encouraged to run different analysis types on limited subsets
+of trajectory frames and plot the results together to check if the
+results changed within the simulation.
