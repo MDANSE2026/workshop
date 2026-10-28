@@ -9,7 +9,7 @@ import openmm.unit as unit
 rng = np.random.default_rng()
 
 LIGHT_WATER = True
-D2O_FRACTION = 0.0
+D_FRACTION = 0.0
 
 PACKED_PDB = "water_box.pdb"
 OUTPUT_DCD_NAME = ...
@@ -30,31 +30,31 @@ H_MASS = 1.00782503 * unit.amu
 D_MASS = 2.01410178 * unit.amu
 
 
-def transmute_water(openmm_system, openmm_topology, d2o_fraction):
-    """Randomly make a fraction of the water molecules D2O;
-    the rest become pure 1H2O.
-    """
-    if not 0.0 <= d2o_fraction <= 1.0:
-        raise ValueError("d2o_fraction must be between 0 and 1")
-    residues = list(openmm_topology.residues())
-    n_d2o = int(round(d2o_fraction * len(residues)))
-    d2o_molecules = set(
-        rng.choice(len(residues), size=n_d2o, replace=False).tolist())
-    for i, residue in enumerate(residues):
+def transmute_water(openmm_system, openmm_topology, d_fraction):
+    hydrogens = [a for a in openmm_topology.atoms() if a.element == app.element.hydrogen]
+    n_d = int(round(d_fraction * len(hydrogens)))
+    chosen = rng.choice(len(hydrogens), size=n_d, replace=False).tolist()
+    d_atoms = {hydrogens[k].index for k in chosen}
+    names = {0: "HOH", 1: "HDO", 2: "DOD"}
+    counts = {0: 0, 1: 0, 2: 0}
+    for residue in openmm_topology.residues():
         n_h = 0
+        n_deut = 0
         for atom in residue.atoms():
             if atom.element != app.element.hydrogen:
                 continue
             n_h += 1
-            if i in d2o_molecules:
+            if atom.index in d_atoms:
+                n_deut += 1
                 atom.name = f"D{n_h}"
                 atom.element = app.element.deuterium
                 openmm_system.setParticleMass(atom.index, D_MASS)
             else:
                 openmm_system.setParticleMass(atom.index, H_MASS)
-        if i in d2o_molecules:
-            residue.name = "DOD"
-    print(f"{n_d2o} of {openmm_topology.getNumResidues()} waters are D2O")
+        residue.name = names[n_deut]
+        counts[n_deut] += 1
+    print(f"{n_d} of {len(hydrogens)} hydrogens are deuterium: "
+          f"{counts[2]} D2O, {counts[1]} HDO, {counts[0]} H2O")
 
 
 # load the pdf file and set the box vectors
@@ -80,7 +80,7 @@ system = forcefield.createSystem(
     rigidWater=...,
 )
 if not LIGHT_WATER:
-    transmute_water(system, topology, D2O_FRACTION)
+    transmute_water(system, topology, D_FRACTION)
 
 # create and add the barostat
 barostat_index = system.addForce(mm.MonteCarloBarostat(PRESSURE, TEMPERATURE, 25))
