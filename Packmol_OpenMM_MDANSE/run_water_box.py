@@ -1,11 +1,19 @@
 import sys
 
+import numpy as np
 import openmm as mm
 import openmm.app as app
 import openmm.unit as unit
 
 
+rng = np.random.default_rng()
+
+LIGHT_WATER = True
+D2O_FRACTION = 0.0
+
 PACKED_PDB = "water_box.pdb"
+OUTPUT_DCD_NAME = ...
+OUTPUT_PDB_NAME = ...
 
 TEMPERATURE = 300 * unit.kelvin
 PRESSURE = ...
@@ -17,6 +25,37 @@ NVE_EQUIL_STEPS = int(round(25.0 / TIMESTEP.value_in_unit(unit.picosecond)))
 NVE_PROD_STEPS = int(round(100.0 / TIMESTEP.value_in_unit(unit.picosecond)))
 REPORT_INTERVAL = int(round(1.0 / TIMESTEP.value_in_unit(unit.picosecond)))
 DCD_INTERVAl = int(round(20.0 / TIMESTEP.value_in_unit(unit.femtoseconds)))
+
+H_MASS = 1.00782503 * unit.amu
+D_MASS = 2.01410178 * unit.amu
+
+
+def transmute_water(openmm_system, openmm_topology, d2o_fraction):
+    """Randomly make a fraction of the water molecules D2O;
+    the rest become pure 1H2O.
+    """
+    if not 0.0 <= d2o_fraction <= 1.0:
+        raise ValueError("d2o_fraction must be between 0 and 1")
+    residues = list(openmm_topology.residues())
+    n_d2o = int(round(d2o_fraction * len(residues)))
+    d2o_molecules = set(
+        rng.choice(len(residues), size=n_d2o, replace=False).tolist())
+    for i, residue in enumerate(residues):
+        n_h = 0
+        for atom in residue.atoms():
+            if atom.element != app.element.hydrogen:
+                continue
+            n_h += 1
+            if i in d2o_molecules:
+                atom.name = f"D{n_h}"
+                atom.element = app.element.deuterium
+                openmm_system.setParticleMass(atom.index, D_MASS)
+            else:
+                openmm_system.setParticleMass(atom.index, H_MASS)
+        if i in d2o_molecules:
+            residue.name = "DOD"
+    print(f"{n_d2o} of {openmm_topology.getNumResidues()} waters are D2O")
+
 
 # load the pdf file and set the box vectors
 pdb = app.PDBFile(PACKED_PDB)
@@ -40,18 +79,20 @@ system = forcefield.createSystem(
     nonbondedCutoff=0.9 * unit.nanometer,
     rigidWater=...,
 )
+if not LIGHT_WATER:
+    transmute_water(system, topology, D2O_FRACTION)
 
 # create and add the barostat
 barostat_index = system.addForce(mm.MonteCarloBarostat(PRESSURE, TEMPERATURE, 25))
 
-# create the integrators for our NPT, NVT, and NVT runs
+# create the langevin and verlet integrators
 nvt_integrator = ...
 nve_integrator = mm.VerletIntegrator(TIMESTEP)
 nve_integrator.setConstraintTolerance(1e-6)
 integrator = mm.CompoundIntegrator()
 integrator.addIntegrator(nvt_integrator)
 integrator.addIntegrator(nve_integrator)
-integrator.setCurrentIntegrator(0)  # set to the NVT integrator
+integrator.setCurrentIntegrator(0)  # set to the langevin integrator
 
 # create the openmm simulation and set the positions and velocities
 simulation = app.Simulation(topology, system, integrator)
@@ -90,7 +131,7 @@ simulation.step(NVE_EQUIL_STEPS)
 print(f"Running NVE production for: {NVE_PROD_STEPS} steps")
 # clear and create new reporters for the production stage
 simulation.reporters.clear()
-simulation.reporters.append(app.DCDReporter("production.dcd", DCD_INTERVAl))
+simulation.reporters.append(app.DCDReporter(OUTPUT_DCD_NAME, DCD_INTERVAl))
 simulation.reporters.append(app.StateDataReporter(
     "production.csv", REPORT_INTERVAL, step=True, time=True,
     potentialEnergy=True, kineticEnergy=True, totalEnergy=True,
@@ -108,5 +149,5 @@ simulation.step(NVE_PROD_STEPS)
 # conversion with the DCD converter. We need to use this one and not the
 # input PDB file since we might have added some virtual particles.
 state = simulation.context.getState(getPositions=True, enforcePeriodicBox=True)
-with open("water_box_final.pdb", "w") as f:
+with open(OUTPUT_PDB_NAME, "w") as f:
     app.PDBFile.writeFile(simulation.topology, state.getPositions(), f)
