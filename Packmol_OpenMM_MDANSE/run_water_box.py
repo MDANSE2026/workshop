@@ -123,7 +123,7 @@ simulation.context.reinitialize(preserveState=True)  # we modified the force, we
 simulation.step(NVT_STEPS)
 
 # NVE equilibration
-print(f"Running NVE equilibration for: {NVE_PROD_STEPS} steps")
+print(f"Running NVE equilibration for: {NVE_EQUIL_STEPS} steps")
 integrator.setCurrentIntegrator(1)  # switch to the velocity verlet
 simulation.step(NVE_EQUIL_STEPS)
 
