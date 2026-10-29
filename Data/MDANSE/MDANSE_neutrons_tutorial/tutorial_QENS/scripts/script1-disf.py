@@ -1,4 +1,4 @@
-#!/Users/maciej.bartkowiak/python/builder/bin/python3.14
+#!/usr/bin/env python
 
 import os
 from pathlib import Path
