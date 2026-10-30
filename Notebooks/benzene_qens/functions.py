@@ -1,4 +1,7 @@
+from pathlib import Path
+
 import numpy as np
+import requests
 from scipy.integrate import trapezoid
 
 
@@ -128,3 +131,26 @@ def trap_uncertainty(x, y, var_y):
     assert np.isclose(integral, trapezoid(x=x, y=y))
 
     return integral, sigma_integral
+
+
+def fetch_zenodo(record_id, filename, dest_dir):
+    """Download one file from a Zenodo record; skip if already there."""
+    dest = Path(dest_dir) / filename
+    if not dest.exists():
+        url = f"https://zenodo.org/records/{record_id}/files/{filename}?download=1"
+        with requests.get(url, stream=True) as r, open(dest, "wb") as f:
+            total = int(r.headers.get("content-length", 0))
+            done = pct = 0
+            for chunk in r.iter_content(1 << 20):
+                f.write(chunk)
+                done += len(chunk)
+                if total and done * 100 // total > pct:
+                    pct = done * 100 // total
+                    print(
+                        f"\r{filename}  [{'#' * (pct // 5):20s}] {pct:3d}%"
+                        f"  {done >> 20}/{total >> 20} MB",
+                        end="",
+                        flush=True,
+                    )
+            print()
+    return dest
