@@ -99,9 +99,9 @@ time_step = 0.1  # 0.1 ps = 100 fs
 num_time_steps = 1000
 
 
-open("../free_particles.xyz", "w").close()  # clear the file
+open("free_particles.xyz", "w").close()  # clear the file
 for _ in range(num_time_steps):
-    write_positions(positions, box_len, "../free_particles.xyz")
+    write_positions(positions, box_len, "free_particles.xyz")
     positions = next_positions(positions, velocities, time_step)
     positions = wrap_coordinates(positions, box_len)
 

@@ -191,12 +191,12 @@ lj_eps = 0.99542  # AMU nm^2 ps^-2 = kJ mol^-1
 
 
 acceleration_0 = calculate_acceleration(positions, mass, lj_sigma, lj_eps, box_len)
-open("../lennard_jones.xyz", "w").close()  # clear the file
+open("lennard_jones.xyz", "w").close()  # clear the file
 for i in range(num_time_steps):
     if i % 5 == 0:
         # dump coordinates every 10 fs
         wrapped = wrap_coordinates(positions, box_len)
-        write_xyz(wrapped, velocities, mass, box_len, "../lennard_jones.xyz")
+        write_xyz(wrapped, velocities, mass, box_len, "lennard_jones.xyz")
 
     # velocity verlet
     positions = next_positions(positions, velocities, acceleration_0, time_step)

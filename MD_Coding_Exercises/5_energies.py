@@ -207,7 +207,7 @@ tot_es = []
 times = []
 
 acceleration_0 = calculate_acceleration(positions, mass, lj_sigma, lj_eps, box_len)
-open("../lennard_jones.xyz", "w").close()  # clear the file
+open("lennard_jones.xyz", "w").close()  # clear the file
 for i in range(num_time_steps):
 
     if i % 5 == 0:
