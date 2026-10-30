@@ -8,7 +8,7 @@ from ase.md.verlet import VelocityVerlet
 
 size = 6
 
-T = 900  # Kelvin
+T = 1200  # Kelvin
 
 # Set up a crystal
 small_atoms = FaceCenteredCubic(directions=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
@@ -44,7 +44,7 @@ dyn.run(10000)
 
 # Next step is an NVE run
 dyn2 = VelocityVerlet(atoms, timestep=5.0*units.fs)
-traj = Trajectory('isotropic_CuAu_T900K.traj', 'w', atoms)
+traj = Trajectory('isotropic_CuAu_T1200K.traj', 'w', atoms)
 dyn2.attach(traj.write, interval=1)
 dyn2.attach(printenergy, interval=10)
 
