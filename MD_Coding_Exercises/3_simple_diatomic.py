@@ -28,15 +28,15 @@ def random_velocities_from_maxwell_boltzmann(n_atms: int, temp: float, mass: flo
     pass
 
 
-def next_positions(pos: np.ndarray, vels: np.ndarray, acc: np.ndarray, ds: float) -> np.ndarray:
+def next_positions(pos_0: np.ndarray, pos_1: np.ndarray, acc: np.ndarray, ds: float) -> np.ndarray:
     """Returns the next positions.
 
     Parameters
     ----------
-    pos : np.ndarray
+    pos_0 : np.ndarray
         Positions of the atoms in the simulation.
-    vels : np.ndarray
-        Velocities of the atoms in the simulation.
+    pos_1 : np.ndarray
+        Positions of the atoms in the simulation.
     acc : np.ndarray
         Acceleration of the atoms in the simulation.
     ds : float
